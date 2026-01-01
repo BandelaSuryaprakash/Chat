@@ -1,0 +1,76 @@
+package chatAppprocess;
+
+import java.io.*;
+import java.net.*;
+import java.util.Scanner;
+
+public class Client {
+
+	// ChatClient.java
+	
+	
+
+	    private String hostname;
+	    private int port;
+	    private String userName;
+	    private Socket socket;
+	    private BufferedReader reader;
+	    private PrintWriter writer;
+
+	    public void ChatClient(String hostname, int port) {
+	        this.hostname = hostname;
+	        this.port = port;
+	    }
+
+	    public void execute() {
+	        try {
+	            socket = new Socket(hostname, port);
+	            System.out.println("Connected to the chat server");
+
+	            reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+	            writer = new PrintWriter(socket.getOutputStream(), true);
+
+	            // Thread for reading messages from server
+	            new Thread(new ReadThread()).start();
+
+	            // Main thread for sending messages from console
+	            try (BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in))) {
+	                String text;
+	                while ((text = consoleReader.readLine()) != null) {
+	                    writer.println(text);
+	                    if ("exit".equalsIgnoreCase(text.trim())) {
+	                        break;
+	                    }
+	                }
+	            }
+
+	        } catch (IOException ex) {
+	            System.out.println("Error connecting to server: " + ex.getMessage());
+	        } finally {
+	            try {
+	                if (socket != null) socket.close();
+	            } catch (IOException ignored) {}
+	        }
+	    }
+
+	    private class ReadThread implements Runnable {
+	        @Override
+	        public void run() {
+	            try {
+	                String response;
+	                while ((response = reader.readLine()) != null) {
+	                    System.out.println(response);
+	                }
+	            } catch (IOException e) {
+	                System.out.println("Disconnected from server.");
+	            }
+	        }
+	    }
+
+	    public static void main(String[] args) {
+	        String hostname = "localhost";
+	        int port = 5000;
+	        Client client = new Client();
+	        client.execute();
+	    }
+	}
